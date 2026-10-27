@@ -7,14 +7,14 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -24,12 +24,12 @@ jobs:
   # Shows the gate doing its job: clean data passes, broken data must be blocked.
   gate-demo:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       AS_OF: "2026-10-26T23:59:00+00:00"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install .
@@ -47,7 +47,7 @@ jobs:
           echo "exit code: $code"
           test "$code" -eq 1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: gate-report
           path: reports/
