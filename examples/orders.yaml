@@ -1,0 +1,59 @@
+# pipeguard example: daily orders mart
+# Run:  pipeguard run examples/orders.yaml --as-of 2026-10-26T23:59:00+00:00
+#       pipeguard run examples/orders.yaml --data examples/orders_bad.csv --as-of 2026-10-26T23:59:00+00:00
+version: 1
+
+dataset:
+  path: orders.csv            # relative to this file
+  parse_dates: [ordered_at, shipped_at]
+
+checks:
+  # --- volume: an empty or exploding batch is the most common silent failure
+  - name: daily_volume
+    type: row_count
+    min: 100
+    max: 100000
+
+  # --- keys
+  - name: order_id_present
+    type: not_null
+    column: order_id
+
+  - name: order_id_unique
+    type: unique
+    columns: order_id
+
+  - name: user_id_mostly_present
+    type: not_null
+    column: user_id
+    max_ratio: 0.01           # tolerate up to 1% guest orders
+    severity: warn
+
+  # --- values
+  - name: amount_in_range
+    type: range
+    column: amount
+    min: 0
+    max: 10000
+
+  - name: known_country
+    type: allowed_values
+    column: country
+    values: [KR, US, DE, FR, JP, BR, IN, GB]
+
+  - name: known_status
+    type: allowed_values
+    column: status
+    values: [paid, shipped, delivered, cancelled]
+
+  # --- time
+  - name: data_is_fresh
+    type: freshness
+    column: ordered_at
+    max_age: 24h
+
+  - name: shipped_after_ordered
+    type: expression
+    expr: "shipped_at.isna() | (shipped_at >= ordered_at)"
+    severity: warn
+    description: shipping timestamps earlier than the order point to a clock or join bug
